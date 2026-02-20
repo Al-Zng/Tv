@@ -166,12 +166,15 @@
             left: 50%;
             transform: translateX(-50%);
             background: var(--accent-green);
-            padding: 12px 30px;
+            padding: 16px 30px;
             border-radius: 50px;
             display: none;
             z-index: 1000;
             text-align: center;
             white-space: nowrap;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+            font-size: 16px;
+            pointer-events: none;
         }
 
         #loader {
@@ -185,6 +188,28 @@
         }
 
         .grid-container::-webkit-scrollbar { width: 0; }
+
+        /* تلميح الجودة */
+        .quality-hint {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8);
+            color: var(--text-gray);
+            padding: 8px 20px;
+            border-radius: 30px;
+            font-size: 13px;
+            border: 1px solid #333;
+            display: none;
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+            white-space: nowrap;
+        }
+        .quality-hint i {
+            color: var(--accent-green);
+            margin-left: 8px;
+        }
     </style>
 </head>
 <body>
@@ -220,7 +245,10 @@
 
     <main class="grid-container" id="channelGrid"></main>
 
-    <div id="status-toast">جاري الفتح في VLC...</div>
+    <div id="status-toast">جاري التوجيه إلى VLC...</div>
+    <div class="quality-hint" id="qualityHint">
+        <i class="fas fa-info-circle"></i> بعد الفتح، يمكنك اختيار الجودة من قائمة التشغيل في VLC
+    </div>
 
     <script>
         const channels = [
@@ -260,7 +288,7 @@
         let currentIndex = 0;
         const columns = 4;
 
-        // إنشاء البطاقات بدون onclick (سنستخدم معالج عام)
+        // إنشاء البطاقات وتخزين البيانات
         channels.forEach((ch, index) => {
             const card = document.createElement('div');
             card.className = 'card';
@@ -276,6 +304,8 @@
         });
 
         const cards = document.querySelectorAll('.card');
+        const toast = document.getElementById('status-toast');
+        const qualityHint = document.getElementById('qualityHint');
 
         function updateFocus(newIndex) {
             if (newIndex >= 0 && newIndex < cards.length) {
@@ -286,8 +316,9 @@
             }
         }
 
-        // debounce لمنع تكرار الفتح عند الضغط المطول
+        // debounce لمنع التكرار
         let opening = false;
+
         function openFocusedChannel() {
             if (opening) return;
             opening = true;
@@ -296,23 +327,46 @@
             const url = card.dataset.url;
             const name = card.dataset.name;
 
-            const toast = document.getElementById('status-toast');
+            // عرض رسالة التوجيه
             toast.style.display = 'block';
-            toast.textContent = `فتح ${name} في VLC...`;
+            toast.textContent = `جاري فتح ${name} في VLC...`;
 
+            // إظهار تلميح الجودة لمدة 5 ثوانٍ
+            qualityHint.style.display = 'block';
+            setTimeout(() => {
+                qualityHint.style.display = 'none';
+            }, 5000);
+
+            // محاولة فتح VLC بالبروتوكول المناسب
             if (/Android/i.test(navigator.userAgent)) {
+                // أندرويد: Intent
                 const intentUrl = `intent://${url.replace(/^https?:\/\//, '')}#Intent;scheme=http;package=org.videolan.vlc;S.title=${encodeURIComponent(name)};end`;
                 window.location.href = intentUrl;
             } else {
+                // أنظمة أخرى: بروتوكول vlc
+                // على ويندوز/macOS/Linux قد يكون مسجلاً
                 window.location.href = `vlc://${url}`;
+                
+                // إذا لم يتم فتح VLC خلال ثانيتين، نعرض رسالة مساعدة (اختياري)
+                setTimeout(() => {
+                    // لا نقوم بفتح نافذة جديدة، فقط نغير نص التوست
+                    if (document.visibilityState !== 'hidden') {
+                        toast.textContent = 'إذا لم يفتح VLC، تأكد من تثبيته ثم حاول مرة أخرى.';
+                        setTimeout(() => {
+                            toast.style.display = 'none';
+                        }, 3000);
+                    }
+                }, 2000);
             }
 
+            // إخفاء التوست بعد 4 ثوانٍ وإعادة تعيين الحاجز
             setTimeout(() => {
                 toast.style.display = 'none';
-                opening = false; // إعادة تعيين الحاجز بعد 3 ثوانٍ
-            }, 3000);
+                opening = false;
+            }, 4000);
         }
 
+        // معالج لوحة المفاتيح للتلفاز
         document.addEventListener('keydown', (e) => {
             switch(e.key) {
                 case 'ArrowRight': updateFocus(currentIndex + 1); break;
@@ -320,13 +374,13 @@
                 case 'ArrowDown': if (currentIndex + columns < cards.length) updateFocus(currentIndex + columns); break;
                 case 'ArrowUp': if (currentIndex - columns >= 0) updateFocus(currentIndex - columns); break;
                 case 'Enter': case 'OK':
-                    e.preventDefault(); // منع أي سلوك افتراضي
+                    e.preventDefault();
                     openFocusedChannel();
                     break;
             }
         });
 
-        // دعم النقر بالماوس/اللمس (للمتصفحات العادية)
+        // دعم النقر بالماوس/اللمس
         cards.forEach((card, idx) => {
             card.addEventListener('click', () => {
                 updateFocus(idx);
