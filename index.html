@@ -37,7 +37,6 @@
             flex-direction: column;
         }
 
-        /* الهيدر */
         .header {
             display: flex;
             justify-content: space-between;
@@ -62,7 +61,6 @@
             font-size: 22px;
         }
 
-        /* البانر العلوي */
         .hero {
             padding: 0 50px;
             margin-bottom: 25px;
@@ -89,7 +87,6 @@
             width: fit-content;
         }
 
-        /* التصنيفات */
         .tabs {
             display: flex;
             gap: 12px;
@@ -109,7 +106,6 @@
             color: white;
         }
 
-        /* الشبكة */
         .grid-container {
             flex: 1;
             overflow-y: auto;
@@ -227,7 +223,6 @@
     <div id="status-toast">جاري الفتح في VLC...</div>
 
     <script>
-        // إعادة القنوات الأصلية كما كانت بالضبط
         const channels = [
             {
                 name: "الاخبارية العامة",
@@ -265,16 +260,18 @@
         let currentIndex = 0;
         const columns = 4;
 
+        // إنشاء البطاقات بدون onclick (سنستخدم معالج عام)
         channels.forEach((ch, index) => {
             const card = document.createElement('div');
             card.className = 'card';
+            card.setAttribute('data-url', ch.url);
+            card.setAttribute('data-name', ch.name);
             card.innerHTML = `
                 <div class="card-img">
                     <img src="${ch.image}" onerror="this.src='https://via.placeholder.com/150?text=${encodeURIComponent(ch.name)}'">
                 </div>
                 <h3>${ch.name}</h3>
             `;
-            card.onclick = () => openVLC(ch.url, ch.name);
             grid.appendChild(card);
         });
 
@@ -289,36 +286,53 @@
             }
         }
 
+        // debounce لمنع تكرار الفتح عند الضغط المطول
+        let opening = false;
+        function openFocusedChannel() {
+            if (opening) return;
+            opening = true;
+
+            const card = cards[currentIndex];
+            const url = card.dataset.url;
+            const name = card.dataset.name;
+
+            const toast = document.getElementById('status-toast');
+            toast.style.display = 'block';
+            toast.textContent = `فتح ${name} في VLC...`;
+
+            if (/Android/i.test(navigator.userAgent)) {
+                const intentUrl = `intent://${url.replace(/^https?:\/\//, '')}#Intent;scheme=http;package=org.videolan.vlc;S.title=${encodeURIComponent(name)};end`;
+                window.location.href = intentUrl;
+            } else {
+                window.location.href = `vlc://${url}`;
+            }
+
+            setTimeout(() => {
+                toast.style.display = 'none';
+                opening = false; // إعادة تعيين الحاجز بعد 3 ثوانٍ
+            }, 3000);
+        }
+
         document.addEventListener('keydown', (e) => {
             switch(e.key) {
                 case 'ArrowRight': updateFocus(currentIndex + 1); break;
                 case 'ArrowLeft': updateFocus(currentIndex - 1); break;
                 case 'ArrowDown': if (currentIndex + columns < cards.length) updateFocus(currentIndex + columns); break;
                 case 'ArrowUp': if (currentIndex - columns >= 0) updateFocus(currentIndex - columns); break;
-                case 'Enter': case 'OK': cards[currentIndex].click(); break;
+                case 'Enter': case 'OK':
+                    e.preventDefault(); // منع أي سلوك افتراضي
+                    openFocusedChannel();
+                    break;
             }
         });
 
-        function openVLC(url, title) {
-            const toast = document.getElementById('status-toast');
-            toast.style.display = 'block';
-            toast.textContent = 'جاري الفتح في VLC...';
-
-            if (/Android/i.test(navigator.userAgent)) {
-                // Intent for Android
-                const intentUrl = `intent://${url.replace(/^https?:\/\//, '')}#Intent;scheme=http;package=org.videolan.vlc;S.title=${encodeURIComponent(title)};end`;
-                window.location.href = intentUrl;
-            } else {
-                // Try VLC protocol on other platforms
-                window.location.href = `vlc://${url}`;
-                // No fallback to browser tab
-            }
-
-            // Hide toast after a few seconds
-            setTimeout(() => {
-                toast.style.display = 'none';
-            }, 4000);
-        }
+        // دعم النقر بالماوس/اللمس (للمتصفحات العادية)
+        cards.forEach((card, idx) => {
+            card.addEventListener('click', () => {
+                updateFocus(idx);
+                openFocusedChannel();
+            });
+        });
 
         window.addEventListener('load', () => {
             setTimeout(() => {
