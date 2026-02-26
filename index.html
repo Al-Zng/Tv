@@ -183,7 +183,7 @@
     <div id="status-toast">جاري الفتح في VLC...</div>
 
     <script>
-        // البيانات المحدثة (نفس الكود السابق)
+        // البيانات المحدثة
         const data = {
             iraq: [
                 { name: "Al-Aimma TV", url: "http://stream.alaimma.tv/hls/alaimma/h3b1rd584cpq8p60okoj01rnfigdcnia.m3u8", img: "https://alaimma.tv/alaimma-logo.png" },
@@ -246,19 +246,22 @@
             ]
         };
 
-        // دالة عرض التبويبات
+        // --- دوال العرض الأساسية ---
         function showTab(tabId, el) {
+            // إخفاء نتائج البحث أولاً
+            hideSearch();
+            
+            // تغيير التبويب النشط
             document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
             document.getElementById(tabId).classList.add('active');
             if (el) el.classList.add('active');
-            // إخفاء نتائج البحث إذا كانت ظاهرة
-            hideSearch();
+            
+            // التركيز على أول قناة في التبويب الجديد
             const firstCard = document.getElementById(tabId).querySelector('.channel-card');
-            if(firstCard) firstCard.focus();
+            if(firstCard) setTimeout(() => firstCard.focus(), 100);
         }
 
-        // دالة تعبئة شبكة
         function populate(gridId, list) {
             const grid = document.getElementById(gridId);
             grid.innerHTML = '';
@@ -272,7 +275,6 @@
             });
         }
 
-        // دالة فتح VLC
         function openVLC(url, name) {
             const toast = document.getElementById('status-toast');
             toast.style.display = 'block';
@@ -289,7 +291,7 @@
         function showSearch() {
             document.getElementById('searchOverlay').classList.add('active');
             document.getElementById('searchInput').focus();
-            // إخفاء التبويبات وإظهار منطقة النتائج
+            // إخفاء جميع التبويبات وإظهار نتائج البحث
             document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
             document.getElementById('searchResults').style.display = 'block';
         }
@@ -298,18 +300,16 @@
             document.getElementById('searchOverlay').classList.remove('active');
             document.getElementById('searchInput').value = '';
             document.getElementById('searchResults').style.display = 'none';
-            // إظهار التبويب النشط
-            const activeTab = document.querySelector('.tab-content.active');
-            if (activeTab) activeTab.style.display = 'block';
+            // إعادة إظهار التبويبات (إزالة أي display none)
+            document.querySelectorAll('.tab-content').forEach(t => t.style.display = '');
+            // التأكد من أن التبويب النشط مرئي (display block) - class active مسؤول عن ذلك عبر CSS
         }
 
         function filterChannels(query) {
             if (!query.trim()) {
-                // إذا كان النص فارغاً، إخفاء النتائج وإظهار التبويب النشط
                 hideSearch();
                 return;
             }
-            // دمج جميع القنوات
             const allChannels = [
                 ...data.iraq,
                 ...data.mbc,
@@ -320,7 +320,6 @@
             const filtered = allChannels.filter(ch => 
                 ch.name.toLowerCase().includes(query.toLowerCase())
             );
-            // عرض النتائج في شبكة البحث
             const searchGrid = document.getElementById('searchGrid');
             searchGrid.innerHTML = '';
             if (filtered.length === 0) {
@@ -335,12 +334,11 @@
                     searchGrid.appendChild(card);
                 });
             }
-            // إظهار منطقة النتائج وإخفاء التبويبات
             document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
             document.getElementById('searchResults').style.display = 'block';
         }
 
-        // --- ربط الأحداث ---
+        // --- تهيئة الصفحة وربط الأحداث ---
         window.onload = () => {
             populate('iraqGrid', data.iraq);
             populate('mbcGrid', data.mbc);
@@ -361,26 +359,26 @@
             // زر الإغلاق
             document.getElementById('searchClose').addEventListener('click', hideSearch);
 
-            // حدث الكتابة في حقل البحث
+            // الكتابة في البحث
             document.getElementById('searchInput').addEventListener('input', (e) => {
                 filterChannels(e.target.value);
             });
 
-            // إغلاق البحث عند الضغط على ESC
+            // إغلاق البحث بالضغط على ESC
             document.addEventListener('keydown', (e) => {
                 if (e.key === 'Escape' && document.getElementById('searchOverlay').classList.contains('active')) {
                     hideSearch();
                 }
             });
 
-            // تركيز على أول قناة بعد تحميل الصفحة
+            // التركيز على أول قناة بعد التحميل
             setTimeout(() => {
                 const firstCard = document.querySelector('.channel-card');
                 if(firstCard) firstCard.focus();
             }, 500);
         };
 
-        // --- التنقل بالأزرار (عن بعد) ---
+        // --- التنقل بالأزرار (جهاز التحكم) ---
         document.addEventListener('focusin', (e) => {
             if (e.target.closest('.movies-grid') || e.target.closest('#searchResults')) 
                 document.body.classList.add('channels-focused');
