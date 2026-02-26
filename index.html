@@ -3,164 +3,81 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Iraq TV Pro - Smart Interface</title>
+    <title>Iraq Tv Pro</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap');
 
         :root {
             --sidebar-bg: #22596b; 
-            --main-bg: #333333; 
+            --main-bg: #1a1a1a; 
             --search-bg: #f59f34; 
-            --accent-green: #00d166;
-            --text-color: #ffffff;
-            --focus-border: #ffffff;
             --sidebar-width: 280px;
             --sidebar-collapsed-width: 90px;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Tajawal', sans-serif; user-select: none; }
 
-        body {
-            background-color: var(--main-bg);
-            color: var(--text-color);
-            display: flex;
-            height: 100vh;
-            overflow: hidden;
-        }
+        body { background-color: var(--main-bg); color: white; display: flex; height: 100vh; overflow: hidden; }
 
-        /* --- القائمة الجانبية الذكية --- */
+        /* --- Sidebar --- */
         .sidebar {
             width: var(--sidebar-width);
             background-color: var(--sidebar-bg);
-            display: flex;
-            flex-direction: column;
-            padding: 30px 15px;
-            z-index: 10;
-            transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            overflow: hidden;
+            display: flex; flex-direction: column; padding: 40px 15px;
+            z-index: 100; transition: width 0.3s ease;
         }
-
-        /* تصغير القائمة عند التركيز على القنوات */
-        body.channels-focused .sidebar {
-            width: var(--sidebar-collapsed-width);
-        }
+        body.channels-focused .sidebar { width: var(--sidebar-collapsed-width); }
 
         .search-btn {
-            min-width: 55px; width: 55px; height: 55px;
-            background-color: var(--search-bg);
-            border-radius: 50%;
-            display: flex; justify-content: center; align-items: center;
-            font-size: 22px; color: white;
-            margin-bottom: 40px; border: 3px solid transparent;
-            outline: none; transition: 0.3s;
-            flex-shrink: 0;
+            width: 55px; height: 55px; background: var(--search-bg);
+            border-radius: 50%; display: flex; justify-content: center; align-items: center;
+            font-size: 22px; margin-bottom: 40px; border: none; outline: none;
         }
-
-        .menu-title { 
-            font-size: 20px; font-weight: bold; margin-bottom: 20px;
-            transition: opacity 0.3s, visibility 0.3s;
-            white-space: nowrap;
-        }
-        body.channels-focused .menu-title { 
-            opacity: 0; 
-            visibility: hidden; 
-        }
-
-        .menu-list { display: flex; flex-direction: column; gap: 10px; }
 
         .menu-item {
-            height: 55px;
-            font-size: 18px; color: #a0c4d1; padding: 0 15px;
-            border-radius: 8px; cursor: pointer; outline: none;
-            border: 2px solid transparent; transition: 0.3s;
-            display: flex; align-items: center; 
-            overflow: hidden; /* يمنع ظهور النص خارج الحدود عند التصغير */
+            height: 55px; display: flex; align-items: center; color: #a0c4d1;
+            padding: 0 18px; border-radius: 12px; transition: 0.3s; outline: none; border: 2px solid transparent;
         }
-
-        .menu-item i { 
-            min-width: 30px; 
-            margin-left: 15px; 
-            text-align: center; 
-            font-size: 22px; 
-            flex-shrink: 0;
-        }
-
-        .menu-item span {
-            transition: opacity 0.3s, visibility 0.3s;
-            white-space: nowrap;
-        }
-
-        /* إخفاء النصوص عند التصغير */
-        body.channels-focused .menu-item span {
-            opacity: 0;
-            visibility: hidden;
-        }
+        .menu-item i { min-width: 30px; margin-left: 20px; font-size: 22px; }
+        body.channels-focused .menu-item span { display: none; }
+        body.channels-focused .menu-title { display: none; }
 
         .focusable:focus {
-            transform: scale(1.05);
-            border-color: var(--focus-border);
-            color: white;
-            background-color: rgba(255, 255, 255, 0.1);
-            box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+            transform: scale(1.08); border-color: white;
+            background: rgba(255, 255, 255, 0.1); color: white;
         }
 
-        /* --- المحتوى الرئيسي --- */
-        .main-content { 
-            flex: 1; padding: 40px; overflow-y: auto; position: relative;
-        }
-        .main-content::-webkit-scrollbar { display: none; }
+        /* --- Main --- */
+        .main-content { flex: 1; padding: 40px; overflow-y: auto; }
+        .top-logo { font-size: 42px; font-weight: 800; color: #4db8d8; margin-bottom: 30px; }
         
-        .top-logo {
-            position: absolute; top: 20px; left: 40px;
-            font-size: 36px; font-weight: bold; color: #4db8d8;
-        }
-
         .movies-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 25px; margin-top: 60px;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 25px;
         }
 
-        /* --- بطاقة القناة --- */
         .channel-card {
-            position: relative;
-            aspect-ratio: 16 / 9;
-            background-color: #ffffff; 
-            border-radius: 12px;
-            overflow: hidden;
-            outline: none;
-            border: 4px solid transparent;
-            transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            aspect-ratio: 16 / 9; background: white; border-radius: 15px;
+            overflow: hidden; outline: none; border: 4px solid transparent;
             display: flex; justify-content: center; align-items: center;
+            transition: 0.3s; position: relative;
         }
-
-        .channel-card:focus {
-            transform: scale(1.1);
-            border-color: var(--focus-border);
-            z-index: 5;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.8);
-        }
-
-        .channel-card img {
-            width: 80%; height: 80%;
-            object-fit: contain;
-        }
+        .channel-card:focus { transform: scale(1.1); border-color: white; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .channel-card img { width: 80%; height: 80%; object-fit: contain; }
 
         .card-overlay {
             position: absolute; inset: 0;
-            background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 40%);
-            display: flex; flex-direction: column; justify-content: flex-end;
-            padding: 12px;
+            background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
+            display: flex; align-items: flex-end; padding: 10px;
         }
+        .channel-name { font-weight: bold; font-size: 16px; color: white; }
 
-        .channel-name { font-weight: bold; font-size: 16px; color: white; text-shadow: 1px 1px 3px rgba(0,0,0,0.8); }
-
-        #status-toast {
+        #toast {
             position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
-            background: var(--accent-green); padding: 15px 30px; border-radius: 50px;
-            display: none; z-index: 1000; box-shadow: 0 10px 20px rgba(0,0,0,0.5);
-            font-weight: bold;
+            background: #00d166; padding: 12px 30px; border-radius: 50px;
+            display: none; font-weight: bold; z-index: 1000;
         }
     </style>
 </head>
@@ -168,65 +85,64 @@
 
     <aside class="sidebar">
         <div class="search-btn focusable" tabindex="0"><i class="fas fa-search"></i></div>
-        <div class="menu-title">المواضيع المثبتة</div>
-        <div class="menu-list">
-            <div class="menu-item focusable" tabindex="0"><i class="fas fa-th-large"></i> <span>الكل</span></div>
-            <div class="menu-item focusable" tabindex="0"><i class="fas fa-clock"></i> <span>المضاف حديثاً</span></div>
-            <div class="menu-item focusable" tabindex="0"><i class="fas fa-film"></i> <span>أحدث الأفلام</span></div>
-            <div class="menu-item focusable" tabindex="0"><i class="fas fa-tv"></i> <span>بث مباشر</span></div>
-        </div>
+        <div class="menu-title" style="margin-bottom:20px; font-weight:bold;">المواضيع المثبتة</div>
+        <div class="menu-item focusable" tabindex="0"><i class="fas fa-tv"></i> <span>القنوات</span></div>
     </aside>
 
     <main class="main-content">
-        <div class="top-logo">IraqTv</div>
+        <div class="top-logo">Iraq Tv</div>
         <div class="movies-grid" id="mainGrid"></div>
     </main>
 
-    <div id="status-toast">جاري الفتح...</div>
+    <div id="toast">تشغيل في VLC...</div>
 
     <script>
+        // كافة القنوات من ملفك الأصلي indexl.html
         const channels = [
             { name: "الرابعة الرياضية", url: "https://rtmp.itiraq.tv/live/sports/playlist.m3u8", img: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e3/Al_Rabiaa_Sports_TV_logo.png/600px-Al_Rabiaa_Sports_TV_logo.png" },
-            { name: "العراقية العامة", url: "http://cdn.catiacast.video/abr/8d2ffb0aba244e8d9101a9488a7daa05/playlist.m3u8", img: "1.jpeg" },
             { name: "العراقية الإخبارية", url: "https://cdn.catiacast.video/abr/78054972db7708422595bc96c6e024ac/playlist.m3u8", img: "2.jpeg" },
+            { name: "الاخبارية العامة", url: "http://cdn.catiacast.video/abr/8d2ffb0aba244e8d9101a9488a7daa05/playlist.m3u8", img: "1.jpeg" },
             { name: "MBC Iraq", url: "https://shd-gcp-live.edgenextcdn.net/live/bitmovin-mbc-iraq/e38c44b1b43474e1c39cb5b90203691e/index.m3u8", img: "https://upload.wikimedia.org/wikipedia/commons/9/99/MBC_Iraq.svg" },
             { name: "Utv", url: "https://mn-nl.mncdn.com/utviraqi2/64c80359/index.m3u8", img: "https://upload.wikimedia.org/wikipedia/commons/5/55/Utv_logo.png" },
-            { name: "الشرقية", url: "https://indexforce.com/home/mystream/playlist.m3u8", img: "https://upload.wikimedia.org/wikipedia/commons/1/1e/Al_Sharqiya.png" }
+            { name: "الشرقية", url: "https://indexforce.com/home/mystream/playlist.m3u8", img: "https://upload.wikimedia.org/wikipedia/commons/1/1e/Al_Sharqiya.png" },
+            { name: "الرابعة نيوز", url: "https://rtmp.itiraq.tv/live/news/playlist.m3u8", img: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/56/%D8%B4%D8%B9%D8%A7%D8%B1_%D9%82%D9%86%D8%A7%D8%A9_%D8%A7%D9%84%D8%B1%D8%A7%D8%A8%D8%B9%D8%A9.svg/500px-%D8%B4%D8%B9%D8%A7%D8%B1_%D9%82%D9%86%D8%A7%D8%A9_%D8%A7%D9%84%D8%B1%D8%A7%D8%A8%D8%B9%D8%A9.svg.png" }
         ];
 
         const grid = document.getElementById('mainGrid');
-        const toast = document.getElementById('status-toast');
+        const toast = document.getElementById('toast');
 
         channels.forEach(ch => {
             const card = document.createElement('div');
             card.className = 'channel-card focusable';
             card.tabIndex = 0;
-            card.dataset.url = ch.url;
-            card.innerHTML = `
-                <img src="${ch.img}" onerror="this.src='https://via.placeholder.com/320x180?text=${ch.name}'">
-                <div class="card-overlay"><div class="channel-name">${ch.name}</div></div>
-            `;
+            card.innerHTML = `<img src="${ch.img}"><div class="card-overlay"><div class="channel-name">${ch.name}</div></div>`;
+            card.onclick = () => openVLC(ch.url);
             grid.appendChild(card);
         });
 
-        // مراقبة التركيز لتصغير/تكبير القائمة الجانبية بالملي
+        function openVLC(url) {
+            toast.style.display = 'block';
+            // الأمر المباشر لفتح VLC دون تدخل المتصفح
+            window.location.assign("vlc://" + url);
+            setTimeout(() => { toast.style.display = 'none'; }, 2000);
+        }
+
         document.addEventListener('focusin', (e) => {
-            if (e.target.closest('.movies-grid')) {
-                document.body.classList.add('channels-focused');
-            } else {
-                document.body.classList.remove('channels-focused');
-            }
+            if (e.target.closest('.movies-grid')) document.body.classList.add('channels-focused');
+            else document.body.classList.remove('channels-focused');
         });
 
+        // نظام التنقل بالأسهم (نفس الميكانيكية التي طلبتها)
         document.addEventListener('keydown', (e) => {
             const focusables = Array.from(document.querySelectorAll('.focusable'));
             let current = document.activeElement;
-            if (!focusables.includes(current)) { focusables[0].focus(); return; }
+            if (e.key === 'Enter') {
+                if(current.onclick) current.onclick();
+                return;
+            }
 
             const rect = current.getBoundingClientRect();
-            let next = null;
-            let minDist = Infinity;
-
+            let next = null, minDist = Infinity;
             focusables.forEach(el => {
                 if (el === current) return;
                 const r = el.getBoundingClientRect();
@@ -235,27 +151,12 @@
                 if (e.key === 'ArrowLeft' && r.right <= rect.left + 20) valid = true;
                 if (e.key === 'ArrowDown' && r.top >= rect.bottom - 20) valid = true;
                 if (e.key === 'ArrowUp' && r.bottom <= rect.top + 20) valid = true;
-
                 if (valid) {
                     const dist = Math.hypot(r.left - rect.left, r.top - rect.top);
                     if (dist < minDist) { minDist = dist; next = el; }
                 }
             });
-
-            if (next) { 
-                e.preventDefault(); 
-                next.focus(); 
-                next.scrollIntoView({ behavior: 'smooth', block: 'center' }); 
-            }
-
-            if (e.key === 'Enter') {
-                if (current.dataset.url) {
-                    toast.style.display = 'block';
-                    toast.innerText = `جاري فتح ${current.querySelector('.channel-name').innerText}...`;
-                    window.location.href = `vlc://${current.dataset.url}`; 
-                    setTimeout(() => toast.style.display = 'none', 3000);
-                }
-            }
+            if (next) { e.preventDefault(); next.focus(); next.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
         });
 
         window.onload = () => document.querySelector('.channel-card').focus();
