@@ -20,7 +20,7 @@
 
         body { background-color: var(--main-bg); color: white; display: flex; height: 100vh; overflow: hidden; }
 
-        /* --- Sidebar --- */
+        /* --- القائمة الجانبية --- */
         .sidebar {
             width: var(--sidebar-width);
             background-color: var(--sidebar-bg);
@@ -40,15 +40,15 @@
             padding: 0 18px; border-radius: 12px; transition: 0.3s; outline: none; border: 2px solid transparent;
         }
         .menu-item i { min-width: 30px; margin-left: 20px; font-size: 22px; }
-        body.channels-focused .menu-item span { display: none; }
-        body.channels-focused .menu-title { display: none; }
+        body.channels-focused .menu-item span, body.channels-focused .menu-title { display: none; }
 
         .focusable:focus {
             transform: scale(1.08); border-color: white;
             background: rgba(255, 255, 255, 0.1); color: white;
+            box-shadow: 0 0 20px rgba(255,255,255,0.2);
         }
 
-        /* --- Main --- */
+        /* --- المحتوى الرئيسي --- */
         .main-content { flex: 1; padding: 40px; overflow-y: auto; }
         .top-logo { font-size: 42px; font-weight: 800; color: #4db8d8; margin-bottom: 30px; }
         
@@ -62,9 +62,9 @@
             aspect-ratio: 16 / 9; background: white; border-radius: 15px;
             overflow: hidden; outline: none; border: 4px solid transparent;
             display: flex; justify-content: center; align-items: center;
-            transition: 0.3s; position: relative;
+            transition: 0.3s; position: relative; cursor: pointer;
         }
-        .channel-card:focus { transform: scale(1.1); border-color: white; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .channel-card:focus { transform: scale(1.1); border-color: white; }
         .channel-card img { width: 80%; height: 80%; object-fit: contain; }
 
         .card-overlay {
@@ -76,7 +76,7 @@
 
         #toast {
             position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
-            background: #00d166; padding: 12px 30px; border-radius: 50px;
+            background: #00d166; color: black; padding: 12px 30px; border-radius: 50px;
             display: none; font-weight: bold; z-index: 1000;
         }
     </style>
@@ -94,10 +94,9 @@
         <div class="movies-grid" id="mainGrid"></div>
     </main>
 
-    <div id="toast">تشغيل في VLC...</div>
+    <div id="toast">يتم الفتح في تطبيق VLC...</div>
 
     <script>
-        // كافة القنوات من ملفك الأصلي indexl.html
         const channels = [
             { name: "الرابعة الرياضية", url: "https://rtmp.itiraq.tv/live/sports/playlist.m3u8", img: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e3/Al_Rabiaa_Sports_TV_logo.png/600px-Al_Rabiaa_Sports_TV_logo.png" },
             { name: "العراقية الإخبارية", url: "https://cdn.catiacast.video/abr/78054972db7708422595bc96c6e024ac/playlist.m3u8", img: "2.jpeg" },
@@ -111,33 +110,41 @@
         const grid = document.getElementById('mainGrid');
         const toast = document.getElementById('toast');
 
+        // وظيفة التشغيل الإجبارية لـ VLC
+        function forceVLC(streamUrl) {
+            toast.style.display = 'block';
+            // استخدام vlc:// مباشرة يمنع المتصفح من تشغيل الفيديو داخلياً
+            const vlcUrl = "vlc://" + streamUrl;
+            
+            // محاولة التشغيل بأكثر من طريقة لضمان الاستجابة على التلفزيون
+            window.location.href = vlcUrl; 
+            
+            setTimeout(() => { toast.style.display = 'none'; }, 3000);
+        }
+
         channels.forEach(ch => {
             const card = document.createElement('div');
             card.className = 'channel-card focusable';
             card.tabIndex = 0;
             card.innerHTML = `<img src="${ch.img}"><div class="card-overlay"><div class="channel-name">${ch.name}</div></div>`;
-            card.onclick = () => openVLC(ch.url);
+            
+            // عند الضغط (Enter أو ماوس)
+            card.addEventListener('click', () => forceVLC(ch.url));
             grid.appendChild(card);
         });
-
-        function openVLC(url) {
-            toast.style.display = 'block';
-            // الأمر المباشر لفتح VLC دون تدخل المتصفح
-            window.location.assign("vlc://" + url);
-            setTimeout(() => { toast.style.display = 'none'; }, 2000);
-        }
 
         document.addEventListener('focusin', (e) => {
             if (e.target.closest('.movies-grid')) document.body.classList.add('channels-focused');
             else document.body.classList.remove('channels-focused');
         });
 
-        // نظام التنقل بالأسهم (نفس الميكانيكية التي طلبتها)
         document.addEventListener('keydown', (e) => {
             const focusables = Array.from(document.querySelectorAll('.focusable'));
             let current = document.activeElement;
-            if (e.key === 'Enter') {
-                if(current.onclick) current.onclick();
+
+            if (e.key === 'Enter' || e.key === 'OK') {
+                e.preventDefault();
+                current.click();
                 return;
             }
 
