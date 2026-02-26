@@ -183,7 +183,7 @@
     <div id="status-toast">جاري الفتح في VLC...</div>
 
     <script>
-        // البيانات المحدثة
+        // ==================== البيانات المحدثة ====================
         const data = {
             iraq: [
                 { name: "Al-Aimma TV", url: "http://stream.alaimma.tv/hls/alaimma/h3b1rd584cpq8p60okoj01rnfigdcnia.m3u8", img: "https://alaimma.tv/alaimma-logo.png" },
@@ -246,35 +246,102 @@
             ]
         };
 
-        // --- دوال العرض الأساسية ---
-        function showTab(tabId, el) {
-            // إخفاء نتائج البحث أولاً
-            hideSearch();
-            
-            // تغيير التبويب النشط
-            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
-            document.getElementById(tabId).classList.add('active');
-            if (el) el.classList.add('active');
-            
-            // التركيز على أول قناة في التبويب الجديد
-            const firstCard = document.getElementById(tabId).querySelector('.channel-card');
-            if(firstCard) setTimeout(() => firstCard.focus(), 100);
+        // ==================== دوال العرض الأساسية ====================
+        let observer = null;
+
+        function initLazyLoading() {
+            if (observer) observer.disconnect();
+            observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const img = entry.target;
+                        const src = img.getAttribute('data-src');
+                        if (src) {
+                            img.src = src;
+                            img.removeAttribute('data-src');
+                            observer.unobserve(img);
+                        }
+                    }
+                });
+            }, { rootMargin: '200px' }); // يبدأ التحميل قبل 200 بكسل من الظهور
+
+            // مراقبة كل الصور التي تحمل data-src
+            document.querySelectorAll('img[data-src]').forEach(img => observer.observe(img));
         }
 
-        function populate(gridId, list) {
-            const grid = document.getElementById(gridId);
-            grid.innerHTML = '';
+        function rebuildTab(tabId, list) {
+            const grid = document.getElementById(tabId);
+            if (!grid) return;
+            grid.innerHTML = ''; // تفريغ المحتوى
             list.forEach(ch => {
                 const card = document.createElement('div');
                 card.className = 'channel-card focusable';
                 card.tabIndex = 0;
-                card.innerHTML = `<img src="${ch.img}" loading="lazy" onerror="this.src='https://via.placeholder.com/200x150?text=TV'"><div class="card-overlay"><div class="channel-name">${ch.name}</div></div>`;
+                // استخدام data-src بدلاً من src لتفعيل lazy loading
+                card.innerHTML = `<img data-src="${ch.img}" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23333'/%3E%3C/svg%3E" loading="lazy" onerror="this.src='https://via.placeholder.com/200x150?text=TV'"><div class="card-overlay"><div class="channel-name">${ch.name}</div></div>`;
                 card.onclick = () => openVLC(ch.url, ch.name);
                 grid.appendChild(card);
             });
+            // إعادة تفعيل المراقبة للصور الجديدة
+            initLazyLoading();
         }
 
+        function clearTab(tabId) {
+            const grid = document.getElementById(tabId);
+            if (grid) grid.innerHTML = ''; // تفريغ المحتوى
+        }
+
+        // تعبئة أولية للتبويبات
+        function populateAllTabs() {
+            rebuildTab('iraqGrid', data.iraq);
+            rebuildTab('mbcGrid', data.mbc);
+            rebuildTab('sportsGrid', data.sports);
+            rebuildTab('docGrid', data.doc);
+            rebuildTab('miscGrid', data.misc);
+        }
+
+        // ==================== التنقل بين التبويبات ====================
+        function showTab(tabId, el) {
+            // إخفاء نتائج البحث أولاً
+            hideSearch();
+
+            // التبويب الحالي النشط
+            const currentActiveTab = document.querySelector('.tab-content.active');
+            if (currentActiveTab) {
+                // تحديد id الشبكة المرتبطة بهذا التبويب
+                const currentGridId = currentActiveTab.querySelector('.movies-grid')?.id;
+                if (currentGridId) clearTab(currentGridId); // تفريغ الصور
+            }
+
+            // تفعيل التبويب الجديد
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            if (el) el.classList.add('active');
+
+            // إعادة بناء شبكة التبويب الجديد إذا كانت فارغة
+            const newGridId = document.getElementById(tabId).querySelector('.movies-grid')?.id;
+            if (newGridId && document.getElementById(newGridId).children.length === 0) {
+                rebuildTab(newGridId, data[getKeyFromGridId(newGridId)]);
+            }
+
+            // التركيز على أول قناة في التبويب الجديد
+            setTimeout(() => {
+                const firstCard = document.getElementById(tabId).querySelector('.channel-card');
+                if (firstCard) firstCard.focus();
+            }, 100);
+        }
+
+        function getKeyFromGridId(gridId) {
+            if (gridId === 'iraqGrid') return 'iraq';
+            if (gridId === 'mbcGrid') return 'mbc';
+            if (gridId === 'sportsGrid') return 'sports';
+            if (gridId === 'docGrid') return 'doc';
+            if (gridId === 'miscGrid') return 'misc';
+            return null;
+        }
+
+        // ==================== دوال فتح VLC ====================
         function openVLC(url, name) {
             const toast = document.getElementById('status-toast');
             toast.style.display = 'block';
@@ -287,11 +354,12 @@
             setTimeout(() => { toast.style.display = 'none'; }, 3000);
         }
 
-        // --- دوال البحث ---
+        // ==================== دوال البحث ====================
         function showSearch() {
             document.getElementById('searchOverlay').classList.add('active');
             document.getElementById('searchInput').focus();
-            // إخفاء جميع التبويبات وإظهار نتائج البحث
+
+            // إخفاء التبويبات
             document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
             document.getElementById('searchResults').style.display = 'block';
         }
@@ -300,9 +368,9 @@
             document.getElementById('searchOverlay').classList.remove('active');
             document.getElementById('searchInput').value = '';
             document.getElementById('searchResults').style.display = 'none';
-            // إعادة إظهار التبويبات (إزالة أي display none)
+
+            // إظهار التبويبات (إزالة أي display none)
             document.querySelectorAll('.tab-content').forEach(t => t.style.display = '');
-            // التأكد من أن التبويب النشط مرئي (display block) - class active مسؤول عن ذلك عبر CSS
         }
 
         function filterChannels(query) {
@@ -329,22 +397,94 @@
                     const card = document.createElement('div');
                     card.className = 'channel-card focusable';
                     card.tabIndex = 0;
-                    card.innerHTML = `<img src="${ch.img}" loading="lazy" onerror="this.src='https://via.placeholder.com/200x150?text=TV'"><div class="card-overlay"><div class="channel-name">${ch.name}</div></div>`;
+                    card.innerHTML = `<img data-src="${ch.img}" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23333'/%3E%3C/svg%3E" loading="lazy" onerror="this.src='https://via.placeholder.com/200x150?text=TV'"><div class="card-overlay"><div class="channel-name">${ch.name}</div></div>`;
                     card.onclick = () => openVLC(ch.url, ch.name);
                     searchGrid.appendChild(card);
                 });
+                initLazyLoading(); // تفعيل lazy loading لصور نتائج البحث
             }
             document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
             document.getElementById('searchResults').style.display = 'block';
         }
 
-        // --- تهيئة الصفحة وربط الأحداث ---
+        // ==================== تحسين التنقل بالأزرار ====================
+        function handleKeyNavigation(e) {
+            const focusableSelectors = '.focusable, .search-overlay input, .search-close, .channel-card';
+            const focusables = Array.from(document.querySelectorAll(focusableSelectors)).filter(el => 
+                el.offsetParent !== null && !el.disabled && getComputedStyle(el).display !== 'none'
+            );
+
+            let current = document.activeElement;
+
+            // إذا لم يكن هناك عنصر مركّز، ركز على أول عنصر
+            if (!current || current === document.body) {
+                if (focusables.length > 0) {
+                    e.preventDefault();
+                    focusables[0].focus();
+                }
+                return;
+            }
+
+            // معالجة زر OK/Enter
+            if (e.key === 'Enter' || e.key === 'OK') {
+                e.preventDefault();
+                if (current && current.click) {
+                    current.click();
+                }
+                return;
+            }
+
+            // التنقل بالأسهم
+            const key = e.key;
+            if (!['ArrowUp', 'ArrowDown', 'ArrowRight', 'ArrowLeft'].includes(key)) return;
+
+            e.preventDefault();
+
+            const currentRect = current.getBoundingClientRect();
+            let bestCandidate = null;
+            let bestDistance = Infinity;
+
+            focusables.forEach(el => {
+                if (el === current) return;
+
+                const rect = el.getBoundingClientRect();
+                let condition = false;
+                let distance = 0;
+
+                switch (key) {
+                    case 'ArrowRight':
+                        condition = rect.left > currentRect.right - 10;
+                        if (condition) distance = Math.hypot(rect.left - currentRect.right, rect.top - currentRect.top);
+                        break;
+                    case 'ArrowLeft':
+                        condition = rect.right < currentRect.left + 10;
+                        if (condition) distance = Math.hypot(currentRect.left - rect.right, rect.top - currentRect.top);
+                        break;
+                    case 'ArrowDown':
+                        condition = rect.top > currentRect.bottom - 10;
+                        if (condition) distance = Math.hypot(rect.left - currentRect.left, rect.top - currentRect.bottom);
+                        break;
+                    case 'ArrowUp':
+                        condition = rect.bottom < currentRect.top + 10;
+                        if (condition) distance = Math.hypot(rect.left - currentRect.left, currentRect.top - rect.bottom);
+                        break;
+                }
+
+                if (condition && distance < bestDistance) {
+                    bestDistance = distance;
+                    bestCandidate = el;
+                }
+            });
+
+            if (bestCandidate) {
+                bestCandidate.focus();
+                bestCandidate.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+
+        // ==================== تهيئة الصفحة وربط الأحداث ====================
         window.onload = () => {
-            populate('iraqGrid', data.iraq);
-            populate('mbcGrid', data.mbc);
-            populate('sportsGrid', data.sports);
-            populate('docGrid', data.doc);
-            populate('miscGrid', data.misc);
+            populateAllTabs();
 
             // زر البحث
             document.getElementById('searchIcon').addEventListener('click', (e) => {
@@ -371,62 +511,27 @@
                 }
             });
 
-            // التركيز على أول قناة بعد التحميل
-            setTimeout(() => {
-                const firstCard = document.querySelector('.channel-card');
-                if(firstCard) firstCard.focus();
-            }, 500);
-        };
+            // التنقل
+            document.addEventListener('keydown', handleKeyNavigation);
 
-        // --- التنقل بالأزرار (جهاز التحكم) ---
-        document.addEventListener('focusin', (e) => {
-            if (e.target.closest('.movies-grid') || e.target.closest('#searchResults')) 
-                document.body.classList.add('channels-focused');
-            else 
-                document.body.classList.remove('channels-focused');
-        });
-
-        document.addEventListener('keydown', (e) => {
-            const focusables = Array.from(document.querySelectorAll('.focusable:not([style*="display: none"]), .search-overlay input, .search-close'));
-            let current = document.activeElement;
-            
-            if (e.key === 'Enter' || e.key === 'OK') { 
-                e.preventDefault();
-                if (current && current.onclick) {
-                    current.click();
-                } else if (current && current.classList.contains('channel-card')) {
-                    current.click();
-                }
-                return; 
-            }
-            
-            if (!current || !focusables.length) return;
-            
-            const rect = current.getBoundingClientRect();
-            let next = null, minDist = Infinity;
-            
-            focusables.forEach(el => {
-                if (el === current || el.offsetParent === null) return;
-                const r = el.getBoundingClientRect();
-                let valid = false;
-                
-                if (e.key === 'ArrowRight' && r.left >= rect.right - 20) valid = true;
-                else if (e.key === 'ArrowLeft' && r.right <= rect.left + 20) valid = true;
-                else if (e.key === 'ArrowDown' && r.top >= rect.bottom - 20) valid = true;
-                else if (e.key === 'ArrowUp' && r.bottom <= rect.top + 20) valid = true;
-                
-                if (valid) {
-                    const dist = Math.hypot(r.left - rect.left, r.top - rect.top);
-                    if (dist < minDist) { minDist = dist; next = el; }
+            // تغيير class للـ body عند التركيز على الشبكة
+            document.addEventListener('focusin', (e) => {
+                if (e.target.closest('.movies-grid') || e.target.closest('#searchResults')) {
+                    document.body.classList.add('channels-focused');
+                } else {
+                    document.body.classList.remove('channels-focused');
                 }
             });
-            
-            if (next) { 
-                e.preventDefault(); 
-                next.focus(); 
-                next.scrollIntoView({ behavior: 'smooth', block: 'center' }); 
-            }
-        });
+
+            // تفعيل lazy loading بعد تحميل الصفحة
+            initLazyLoading();
+
+            // التركيز على أول قناة
+            setTimeout(() => {
+                const firstCard = document.querySelector('.channel-card');
+                if (firstCard) firstCard.focus();
+            }, 500);
+        };
     </script>
 </body>
 </html>
