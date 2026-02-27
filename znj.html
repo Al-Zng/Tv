@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Iraq Tv Pro - Mobile</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap');
+
+        :root {
+            --bottom-nav-bg: #1a2a33; 
+            --main-bg: #050505; 
+            --search-bg: #f59f34; 
+            --accent-green: #00d166;
+            --text-blue: #4db8d8;
+        }
+
+        /* منع التحديد والنسخ */
+        * { 
+            box-sizing: border-box; 
+            margin: 0; 
+            padding: 0; 
+            font-family: 'Tajawal', sans-serif; 
+            -webkit-tap-highlight-color: transparent;
+            -webkit-user-select: none; /* Safari */
+            -ms-user-select: none; /* IE 10 and Consumer Preview */
+            user-select: none; /* Standard syntax */
+        }
+
+        body { background-color: var(--main-bg); color: white; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+
+        /* --- الأنيميشن الجديد --- */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-tab { animation: fadeInUp 0.4s ease-out forwards; }
+
+        /* --- Header --- */
+        header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 15px 20px; background: var(--main-bg); z-index: 1000;
+        }
+        .top-logo { font-size: 24px; font-weight: 800; color: var(--text-blue); }
+        .search-trigger { font-size: 20px; color: white; cursor: pointer; }
+
+        /* --- Main Content --- */
+        .main-content { flex: 1; overflow-y: auto; padding: 10px 15px 100px 15px; scroll-behavior: smooth; }
+        
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        .section-header { font-size: 20px; font-weight: bold; margin: 10px 0 20px 0; color: white; }
+
+        .movies-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+
+        .channel-card {
+            aspect-ratio: 1/1; background: #111; border-radius: 12px;
+            overflow: hidden; display: flex; justify-content: center; align-items: center;
+            position: relative; border: 1px solid rgba(255,255,255,0.05);
+            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        
+        /* أنيميشن عند الضغط */
+        .channel-card:active { transform: scale(0.92); }
+
+        .channel-card img { width: 70%; height: 70%; object-fit: contain; pointer-events: none; }
+
+        .card-overlay {
+            position: absolute; inset: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.8), transparent 80%);
+            display: flex; align-items: flex-end; padding: 5px; justify-content: center;
+        }
+        .channel-name { font-weight: bold; font-size: 10px; color: white; text-align: center; }
+
+        /* --- Bottom Navigation --- */
+        .bottom-nav {
+            position: fixed; bottom: 0; left: 0; right: 0;
+            height: 70px; background: var(--bottom-nav-bg);
+            display: flex; justify-content: space-around; align-items: center;
+            border-top: 1px solid rgba(255,255,255,0.1); z-index: 1000;
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        .nav-item {
+            display: flex; flex-direction: column; align-items: center;
+            color: #a0c4d1; font-size: 12px; transition: 0.3s; flex: 1;
+        }
+        .nav-item i { font-size: 20px; margin-bottom: 5px; }
+        .nav-item.active { color: var(--text-blue); transform: translateY(-2px); }
+
+        /* --- Search Overlay --- */
+        .search-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: var(--main-bg); z-index: 2000; display: none;
+            padding: 20px;
+        }
+        .search-overlay.active { display: block; animation: fadeInUp 0.3s ease; }
+        .search-header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
+        .search-bar {
+            flex: 1; background: #1e2e3a; border-radius: 10px;
+            padding: 10px 15px; display: flex; align-items: center;
+        }
+        .search-bar input {
+            background: transparent; border: none; color: white; flex: 1; outline: none; font-size: 16px;
+        }
+        .close-search { font-size: 24px; color: var(--text-blue); }
+
+        #status-toast {
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+            background: var(--accent-green); color: black; padding: 10px 20px;
+            border-radius: 10px; display: none; z-index: 3000; font-weight: bold; font-size: 14px;
+        }
+    </style>
+</head>
+<body oncontextmenu="return false;"> <div id="status-toast">جاري الفتح...</div>
+
+    <header>
+        <div class="search-trigger" id="searchIcon"><i class="fas fa-search"></i></div>
+        <div class="top-logo">Iraq Tv <span>Max</span></div>
+        <div style="width: 20px;"></div> 
+    </header>
+
+    <div class="search-overlay" id="searchOverlay">
+        <div class="search-header">
+            <div class="search-bar">
+                <i class="fas fa-search" style="margin-left: 10px; color: #a0c4d1;"></i>
+                <input type="text" id="searchInput" placeholder="ابحث عن قناة...">
+            </div>
+            <i class="fas fa-times close-search" id="searchClose"></i>
+        </div>
+        <div class="movies-grid" id="searchGrid"></div>
+    </div>
+
+    <main class="main-content">
+        <div id="iraq-tab" class="tab-content active animate-tab">
+            <div class="section-header">العراق</div>
+            <div class="movies-grid" id="iraqGrid"></div>
+        </div>
+        <div id="mbc-tab" class="tab-content animate-tab">
+            <div class="section-header">باقة MBC</div>
+            <div class="movies-grid" id="mbcGrid"></div>
+        </div>
+        <div id="sports-tab" class="tab-content animate-tab">
+            <div class="section-header">الرياضة</div>
+            <div class="movies-grid" id="sportsGrid"></div>
+        </div>
+        <div id="doc-tab" class="tab-content animate-tab">
+            <div class="section-header">الوثائقية</div>
+            <div class="movies-grid" id="docGrid"></div>
+        </div>
+        <div id="misc-tab" class="tab-content animate-tab">
+            <div class="section-header">متنوعات</div>
+            <div class="movies-grid" id="miscGrid"></div>
+        </div>
+    </main>
+
+    <nav class="bottom-nav">
+        <div class="nav-item active" onclick="showTab('iraq-tab', this)"><i class="fas fa-flag"></i><span>العراق</span></div>
+        <div class="nav-item" onclick="showTab('mbc-tab', this)"><i class="fas fa-play"></i><span>MBC</span></div>
+        <div class="nav-item" onclick="showTab('sports-tab', this)"><i class="fas fa-running"></i><span>رياضة</span></div>
+        <div class="nav-item" onclick="showTab('doc-tab', this)"><i class="fas fa-atlas"></i><span>وثائقية</span></div>
+        <div class="nav-item" onclick="showTab('misc-tab', this)"><i class="fas fa-ellipsis-h"></i><span>المزيد</span></div>
+    </nav>
+
+    <script>
+        // داتات القنوات (لم يتغير فيها حرف واحد)
+        const data = {
+            iraq: [
+                { name: "Al-Aimma TV", url: "http://stream.alaimma.tv/hls/alaimma/h3b1rd584cpq8p60okoj01rnfigdcnia.m3u8", img: "https://alaimma.tv/alaimma-logo.png" },
+                { name: "Al Iraqia", url: "https://cdn.catiacast.video/abr/8d2ffb0aba244e8d9101a9488a7daa05/playlist.m3u8", img: "https://i.imgur.com/8qQouTW.jpg" },
+                { name: "Al Iraqia News", url: "https://cdn.catiacast.video/abr/78054972db7708422595bc96c6e024ac/playlist.m3u8", img: "https://i.imgur.com/feQTXeZ.jpg" },
+                { name: "Al-Jawadain TV", url: "https://live.aljawadain.org/live/aljawadaintv/playlist.m3u8", img: "https://i.imgur.com/Eo3UYCK.png" },
+                { name: "Alquran", url: "https://ktvlive.online/stream/hls/ch1.m3u8", img: "https://i.imgur.com/lqVwrAF.png" },
+                { name: "Al Rasheed TV", url: "https://media1.livaat.com/static/AL-RASHEED-HD/playlist.m3u8", img: "https://i.imgur.com/ltyRjPK.png" },
+                { name: "Al-Sharqiya", url: "https://5d94523502c2d.streamlock.net/home/mystream/playlist.m3u8", img: "https://i.imgur.com/mJIG5IV.png" },
+                { name: "Al-Sharqiya News", url: "https://5d94523502c2d.streamlock.net/alsharqiyalive/mystream/playlist.m3u8", img: "https://i.imgur.com/PeAcXB9.png" },
+                { name: "Anwar TV2", url: "https://cloud.odysee.live/content/f92670235a1ce2bce4cf77671cc4dcc2188baa1d/master.m3u8", img: "https://i.imgur.com/yHZXPcn.png" },
+                { name: "Dijlah TV", url: "https://ghaasiflu.online/Dijlah/index.m3u8", img: "https://i.imgur.com/kyzH3G5.png" },
+                { name: "EmanTv", url: "https://avr.host247.net/live/emantv/playlist.m3u8", img: "https://i.imgur.com/QmgaPSi.png" },
+                { name: "FarmodaTV", url: "https://avr.host247.net/live/FarmodaTV/playlist.m3u8", img: "https://i.imgur.com/x4KCQlH.png" },
+                { name: "Imam Hussein TV 1", url: "https://live.imamhossaintv.com/live/ih1.m3u8", img: "https://i.imgur.com/pDdUvz7.png" },
+                { name: "Imam Hussein TV 2", url: "https://live.imamhossaintv.com/live/ih2.m3u8", img: "https://i.imgur.com/IXVSPdJ.png" },
+                { name: "Imam Hussein TV 3", url: "https://live.imamhossaintv.com/live/ih3.m3u8", img: "https://i.imgur.com/emQRHQZ.png" },
+                { name: "Imam Hussein TV 4", url: "https://live.imamhossaintv.com/live/ih4.m3u8", img: "https://i.imgur.com/0UYcylY.png" },
+                { name: "iNEWS TV", url: "https://live.i-news.tv/hls/stream.m3u8", img: "https://i.imgur.com/9lOuzHQ.png" },
+                { name: "Marjaeyat TV Arabic", url: "https://livefa.marjaeyattv.com/mtv_ar/playlist.m3u8", img: "https://i.imgur.com/LsYYkUI.png" },
+                { name: "Shams TV", url: "https://stream.shams.tv/hls/stream.m3u8", img: "https://www.semakurd.net/sites/default/files/imagecache/400xY/shemis-tv.jpg" },
+                { name: "UTV", url: "https://mn-nl.mncdn.com/utviraqi2/64c80359/index.m3u8", img: "https://i.imgur.com/9qFHjnu.png" }
+            ],
+            mbc: [
+                { name: "MBC 1", url: "https://shd-gcp-live.edgenextcdn.net/live/bitmovin-mbc-1/15cf99af5de54063fdabfefe66adc075/index.m3u8", img: "https://i.imgur.com/CiA3plN.png" },
+                { name: "MBC 3 USA", url: "https://shd-gcp-live.edgenextcdn.net/live/bitmovin-mbc-3-usa/5d58265a862a476dc7f97694addb5ded/index.m3u8", img: "https://i.imgur.com/PVt8OPN.png" },
+                { name: "MBC 4", url: "https://shd-gcp-live.edgenextcdn.net/live/bitmovin-mbc-4/24f134f1cd63db9346439e96b86ca6ed/index.m3u8", img: "https://i.imgur.com/BcXASpp.png" },
+                { name: "MBC 5", url: "https://shd-gcp-live.edgenextcdn.net/live/bitmovin-mbc-5/ee6b000cee0629411b666ab26cb13e9b/index.m3u8", img: "https://i.imgur.com/fRWaDyF.png" },
+                { name: "MBC Bollywood", url: "https://shd-gcp-live.edgenextcdn.net/live/bitmovin-mbc-bollywood/546eb40d7dcf9a209255dd2496903764/index.m3u8", img: "https://i.imgur.com/TTAGFHG.png" },
+                { name: "MBC Drama", url: "https://shd-gcp-live.edgenextcdn.net/live/bitmovin-mbc-drama/2c28a458e2f3253e678b07ac7d13fe71/index.m3u8", img: "https://i.imgur.com/g5PWnqp.png" },
+                { name: "MBC Iraq", url: "https://shd-gcp-live.edgenextcdn.net/live/bitmovin-mbc-iraq/e38c44b1b43474e1c39cb5b90203691e/index.m3u8", img: "https://i.imgur.com/D0LxiPE.png" },
+                { name: "MBC Masr Drama", url: "https://shd-gcp-live.edgenextcdn.net/live/bitmovin-mbc-masr-drama/567b703c19ede6598222de81b0e4508b/index.m3u8", img: "https://media0070.elcinema.com/tvguide/1399_1.png" },
+                { name: "MBC Masr USA", url: "https://shd-gcp-live.edgenextcdn.net/live/bitmovin-mbc-masr-usa/cd8d40acdab28aac0582faa3bd3983f1/index.m3u8", img: "https://i.imgur.com/o2elx0u.png" },
+                { name: "MBC+ Drama", url: "https://shd-gcp-live.edgenextcdn.net/live/bitmovin-mbc-plus-drama/e37251ec2aac8f6c98f75cd0fa37cd28/index.m3u8", img: "https://i.imgur.com/lxWdjXG.png" }
+            ],
+            sports: [
+                { name: "Alkass Five", url: "https://liveeu-gcp.alkassdigital.net/alkass5-p/main.m3u8", img: "https://i.imgur.com/6RGNGsM.png" },
+                { name: "Alkass Four", url: "https://liveeu-gcp.alkassdigital.net/alkass4-p/main.m3u8", img: "https://i.imgur.com/iDL65Wu.png" },
+                { name: "Alkass One", url: "https://liveeu-gcp.alkassdigital.net/alkass1-p/main.m3u8", img: "https://i.imgur.com/10mmlha.png" },
+                { name: "Alkass Seven", url: "https://liveeu-gcp.alkassdigital.net/alkass7-p/main.m3u8", img: "https://i.imgur.com/3eyHP3S.png" },
+                { name: "Alkass Six", url: "https://liveeu-gcp.alkassdigital.net/alkass6-p/main.m3u8", img: "https://i.imgur.com/CrPSPSC.png" },
+                { name: "Alkass Three", url: "https://liveeu-gcp.alkassdigital.net/alkass3-p/main.m3u8", img: "https://i.imgur.com/d57BdFh.png" },
+                { name: "Alkass Two", url: "https://liveeu-gcp.alkassdigital.net/alkass2-p/main.m3u8", img: "https://i.imgur.com/8w61kFX.png" }
+            ],
+            doc: [
+                { name: "National Geographic HD East", url: "https://tvpass.org/live/NationalGeographicEast/hd", img: "https://upload.wikimedia.org/wikipedia/commons/thumb/f/fc/Natgeologo.svg/512px-Natgeologo.svg.png" },
+                { name: "National Geographic Abu Dhabi HD", url: "https://admn-live-cdn-lb.starzplayarabia.com/out/v1/admn_tv_enc/national_geo/national_geo_hls_nd/index.m3u8", img: "https://i.imgur.com/fNA00VF.png" },
+                { name: "National Geographic Latin America South", url: "http://38.183.182.166:8000/play/a0vd/index.m3u8", img: "https://upload.wikimedia.org/wikipedia/commons/thumb/f/fc/Natgeologo.svg/512px-Natgeologo.svg.png" },
+                { name: "National Geographic Wild HD East", url: "https://tvpass.org/live/NationalGeographicWildEast/hd", img: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/27/National_Geographic_Wild_logo.svg/512px-National_Geographic_Wild_logo.svg.png" }
+            ],
+            misc: [
+                { name: "Al Arabiya", url: "https://live.alarabiya.net/alarabiapublish/alarabiya.smil/playlist.m3u8", img: "https://i.imgur.com/NXFkYFj.png" },
+                { name: "Al Arabiya Al Hadath", url: "https://av.alarabiya.net/alarabiapublish/alhadath.smil/playlist.m3u8", img: "https://i.imgur.com/De4SEWE.png" },
+                { name: "Anime", url: "https://shls-live-enc.edgenextcdn.net/out/v1/e7350ddf46c94dddafe14b099394ff56/index.m3u8", img: "https://shahid.mbc.net/mediaObject/a5893f8d-8488-4c21-ab97-a627f99c7676?height=auto&width=512&croppingPoint=&version=1&type=png" },
+                { name: "Majid", url: "https://admn-live-cdn-lb.starzplayarabia.com/out/v1/admn_tv_enc/majid/majid_hls_nd/index.m3u8", img: "https://i.imgur.com/TzOKMMy.png" },
+                { name: "Nickelodeon", url: "http://23.237.104.106:8080/USA_NICKELODEON/index.m3u8", img: "https://i.imgur.com/E84jnP8.png" },
+                { name: "Sky News Arabia", url: "https://live-stream.skynewsarabia.com/c-horizontal-channel/horizontal-stream/index.m3u8", img: "https://i.imgur.com/SvjU4h6.png" },
+                { name: "Spacetoon Arabic", url: "https://shd-gcp-live.edgenextcdn.net/live/bitmovin-spacetoon/d8382fb9ab4b2307058f12c7ea90db54/index.m3u8", img: "https://upload.wikimedia.org/wikipedia/en/2/2b/Spacetoon_logo.png" },
+                { name: "Taha TV", url: "https://media1.livaat.com/static/TAHA_TV/playlist.m3u8", img: "https://i.imgur.com/hdsrxvX.png" }
+            ]
+        };
+
+        // المنطق الأساسي
+        let observer = null;
+
+        function initLazyLoading() {
+            if (observer) observer.disconnect();
+            observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const img = entry.target;
+                        const src = img.getAttribute('data-src');
+                        if (src) { img.src = src; img.removeAttribute('data-src'); observer.unobserve(img); }
+                    }
+                });
+            }, { rootMargin: '100px' });
+            document.querySelectorAll('img[data-src]').forEach(img => observer.observe(img));
+        }
+
+        function rebuildTab(tabId, list) {
+            const grid = document.getElementById(tabId);
+            if (!grid) return;
+            grid.innerHTML = '';
+            list.forEach(ch => {
+                const card = document.createElement('div');
+                card.className = 'channel-card';
+                card.innerHTML = `<img data-src="${ch.img}" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23333'/%3E%3C/svg%3E"><div class="card-overlay"><div class="channel-name">${ch.name}</div></div>`;
+                card.onclick = () => openVLC(ch.url, ch.name);
+                grid.appendChild(card);
+            });
+            initLazyLoading();
+        }
+
+        function showTab(tabId, el) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(m => m.classList.remove('active'));
+            const target = document.getElementById(tabId);
+            target.classList.add('active');
+            if (el) el.classList.add('active');
+            window.scrollTo(0,0);
+        }
+
+        function openVLC(url, name) {
+            const toast = document.getElementById('status-toast');
+            toast.style.display = 'block';
+            toast.textContent = `فتح ${name}...`;
+            if (/Android/i.test(navigator.userAgent)) {
+                window.location.href = `intent://${url.replace(/^https?:\/\//, '')}#Intent;scheme=http;package=org.videolan.vlc;S.title=${encodeURIComponent(name)};end`;
+            } else {
+                window.location.href = `vlc://${url}`;
+            }
+            setTimeout(() => { toast.style.display = 'none'; }, 3000);
+        }
+
+        // البحث
+        document.getElementById('searchIcon').onclick = () => document.getElementById('searchOverlay').classList.add('active');
+        document.getElementById('searchClose').onclick = () => document.getElementById('searchOverlay').classList.remove('active');
+        document.getElementById('searchInput').oninput = (e) => {
+            const query = e.target.value.toLowerCase();
+            const all = [...data.iraq, ...data.mbc, ...data.sports, ...data.doc, ...data.misc];
+            const filtered = all.filter(ch => ch.name.toLowerCase().includes(query));
+            const grid = document.getElementById('searchGrid');
+            grid.innerHTML = '';
+            filtered.forEach(ch => {
+                const card = document.createElement('div');
+                card.className = 'channel-card';
+                card.innerHTML = `<img src="${ch.img}"><div class="card-overlay"><div class="channel-name">${ch.name}</div></div>`;
+                card.onclick = () => openVLC(ch.url, ch.name);
+                grid.appendChild(card);
+            });
+        };
+
+        // --- كود حماية إضافي (تعطيل الاختصارات) ---
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && (e.key === 'c' || e.key === 'v' || e.key === 'u' || e.key === 's')) {
+                e.preventDefault();
+            }
+        });
+
+        window.onload = () => {
+            rebuildTab('iraqGrid', data.iraq);
+            rebuildTab('mbcGrid', data.mbc);
+            rebuildTab('sportsGrid', data.sports);
+            rebuildTab('docGrid', data.doc);
+            rebuildTab('miscGrid', data.misc);
+        };
+    </script>
+</body>
+</html>
