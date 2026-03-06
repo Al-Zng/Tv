@@ -7,51 +7,66 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap');
-
         :root {
             --bottom-nav-bg: #1a2a33; 
             --main-bg: #050505; 
-            --search-bg: #f59f34; 
+            --search-bg: #f59f34;
             --accent-green: #00d166;
             --text-blue: #4db8d8;
         }
 
         /* منع التحديد والنسخ */
         * { 
-            box-sizing: border-box; 
-            margin: 0; 
-            padding: 0; 
-            font-family: 'Tajawal', sans-serif; 
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Tajawal', sans-serif;
             -webkit-tap-highlight-color: transparent;
-            -webkit-user-select: none; /* Safari */
-            -ms-user-select: none; /* IE 10 and Consumer Preview */
-            user-select: none; /* Standard syntax */
+            -webkit-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
         }
 
-        body { background-color: var(--main-bg); color: white; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+        body { background-color: var(--main-bg);
+            color: white; display: flex; flex-direction: column; height: 100vh; overflow: hidden;
+        }
 
-        /* --- الأنيميشن الجديد --- */
+        /* وضع الأداء الضعيف */
+        body.perf-low * {
+            animation: none !important;
+            transition: none !important;
+            box-shadow: none !important;
+            text-shadow: none !important;
+        }
+
         @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(15px); }
-            to { opacity: 1; transform: translateY(0); }
+            from { opacity: 0;
+            transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0);
+            }
         }
-        .animate-tab { animation: fadeInUp 0.4s ease-out forwards; }
+        .animate-tab { animation: fadeInUp 0.4s ease-out forwards;
+        }
 
-        /* --- Header --- */
         header {
-            display: flex; justify-content: space-between; align-items: center;
+            display: flex;
+            justify-content: space-between; align-items: center;
             padding: 15px 20px; background: var(--main-bg); z-index: 1000;
         }
-        .top-logo { font-size: 24px; font-weight: 800; color: var(--text-blue); }
-        .search-trigger { font-size: 20px; color: white; cursor: pointer; }
+        .top-logo { font-size: 24px; font-weight: 800; color: var(--text-blue);
+        }
+        .menu-toggle { font-size: 20px; color: white; cursor: pointer; }
 
-        /* --- Main Content --- */
-        .main-content { flex: 1; overflow-y: auto; padding: 10px 15px 100px 15px; scroll-behavior: smooth; }
+        .main-content { flex: 1;
+            overflow-y: auto; padding: 10px 15px 100px 15px; scroll-behavior: smooth; }
         
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
+        .tab-content { display: none;
+        }
+        .tab-content.active { display: block;
+        }
 
-        .section-header { font-size: 20px; font-weight: bold; margin: 10px 0 20px 0; color: white; }
+        .section-header { font-size: 20px; font-weight: bold; margin: 10px 0 20px 0;
+            color: white; }
 
         .movies-grid {
             display: grid;
@@ -60,64 +75,88 @@
         }
 
         .channel-card {
-            aspect-ratio: 1/1; background: #111; border-radius: 12px;
+            aspect-ratio: 1/1;
+            background: #111; border-radius: 12px;
             overflow: hidden; display: flex; justify-content: center; align-items: center;
             position: relative; border: 1px solid rgba(255,255,255,0.05);
             transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
         
-        /* أنيميشن عند الضغط */
-        .channel-card:active { transform: scale(0.92); }
+        .channel-card:active { transform: scale(0.92);
+        }
 
-        .channel-card img { width: 70%; height: 70%; object-fit: contain; pointer-events: none; }
+        .channel-card img { width: 70%; height: 70%; object-fit: contain; pointer-events: none;
+        }
 
         .card-overlay {
-            position: absolute; inset: 0;
+            position: absolute;
+            inset: 0;
             background: linear-gradient(to top, rgba(0,0,0,0.8), transparent 80%);
             display: flex; align-items: flex-end; padding: 5px; justify-content: center;
         }
-        .channel-name { font-weight: bold; font-size: 10px; color: white; text-align: center; }
-
-        /* --- Bottom Navigation --- */
-        .bottom-nav {
-            position: fixed; bottom: 0; left: 0; right: 0;
-            background: var(--bottom-nav-bg);
-            display: flex; justify-content: space-around; align-items: center;
-            border-top: 1px solid rgba(255,255,255,0.1); z-index: 1000;
-            padding: 8px 0 calc(8px + env(safe-area-inset-bottom));
-            overflow-x: auto; /* للتمرير إذا زادت العناصر */
-            -webkit-overflow-scrolling: touch;
+        .channel-name { font-weight: bold; font-size: 10px; color: white; text-align: center;
         }
+
+        /* --- Sidebar للهاتف --- */
+        .sidebar-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7); z-index: 2500; display: none;
+        }
+        .sidebar {
+            position: fixed; top: 0; right: -280px; width: 280px; height: 100%;
+            background: var(--bottom-nav-bg); z-index: 2600; transition: 0.3s ease;
+            display: flex; flex-direction: column; padding: 20px;
+        }
+        .sidebar.active { right: 0; }
+        .sidebar-header { font-size: 22px; font-weight: bold; color: var(--text-blue); margin-bottom: 30px; display: flex; justify-content: space-between; }
         .nav-item {
-            display: flex; flex-direction: column; align-items: center;
-            color: #a0c4d1; font-size: 11px; transition: 0.3s;
-            min-width: 60px; padding: 0 2px;
+            display: flex; align-items: center; color: #a0c4d1; padding: 15px;
+            border-radius: 10px; margin-bottom: 5px; transition: 0.3s;
         }
-        .nav-item i { font-size: 18px; margin-bottom: 4px; }
-        .nav-item.active { color: var(--text-blue); transform: translateY(-2px); }
+        .nav-item i { width: 30px; font-size: 18px; }
+        .nav-item.active { background: rgba(255,255,255,0.1); color: white; }
+        .sidebar-footer { margin-top: auto; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px; }
 
-        /* --- Search Overlay --- */
         .search-overlay {
-            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
             background: var(--main-bg); z-index: 2000; display: none;
             padding: 20px;
             overflow-y: auto;
         }
-        .search-overlay.active { display: block; animation: fadeInUp 0.3s ease; }
-        .search-header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
+        .search-overlay.active { display: block; animation: fadeInUp 0.3s ease;
+        }
+        .search-header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px;
+        }
         .search-bar {
-            flex: 1; background: #1e2e3a; border-radius: 10px;
+            flex: 1;
+            background: #1e2e3a; border-radius: 10px;
             padding: 10px 15px; display: flex; align-items: center;
         }
         .search-bar input {
-            background: transparent; border: none; color: white; flex: 1; outline: none; font-size: 16px;
+            background: transparent;
+            border: none; color: white; flex: 1; outline: none; font-size: 16px;
         }
-        .close-search { font-size: 24px; color: var(--text-blue); }
+        .close-search { font-size: 24px; color: var(--text-blue);
+        }
+
+        /* نافذة الإعدادات */
+        .modal {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.9);
+            z-index: 3000; display: none; align-items: center; justify-content: center; padding: 20px;
+        }
+        .modal-content {
+            background: #1a2a33; width: 100%; max-width: 400px; border-radius: 20px; padding: 25px;
+        }
+        .setting-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .btn-save { background: var(--text-blue); color: #000; border: none; padding: 12px; width: 100%; border-radius: 10px; font-weight: bold; }
 
         #status-toast {
-            position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+            position: fixed;
+            top: 20px; left: 50%; transform: translateX(-50%);
             background: var(--accent-green); color: black; padding: 10px 20px;
-            border-radius: 10px; display: none; z-index: 3000; font-weight: bold; font-size: 14px;
+            border-radius: 10px; display: none; z-index: 3000;
+            font-weight: bold; font-size: 14px;
         }
     </style>
 </head>
@@ -125,10 +164,39 @@
     <div id="status-toast">جاري الفتح...</div>
 
     <header>
-        <div class="search-trigger" id="searchIcon"><i class="fas fa-search"></i></div>
+        <div class="menu-toggle" onclick="toggleSidebar()"><i class="fas fa-bars"></i></div>
         <div class="top-logo">Iraq Tv <span>Max</span></div>
-        <div style="width: 20px;"></div> 
+        <div class="search-trigger" id="searchIcon"><i class="fas fa-search"></i></div>
     </header>
+
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">القائمة <i class="fas fa-times" onclick="toggleSidebar()"></i></div>
+        <div class="nav-item active" onclick="showTab('iraq-tab', this); toggleSidebar()"><i class="fas fa-flag"></i><span>العراق</span></div>
+        <div class="nav-item" onclick="showTab('mbc-tab', this); toggleSidebar()"><i class="fas fa-play"></i><span>MBC</span></div>
+        <div class="nav-item" onclick="showTab('sports-tab', this); toggleSidebar()"><i class="fas fa-running"></i><span>رياضة</span></div>
+        <div class="nav-item" onclick="showTab('doc-tab', this); toggleSidebar()"><i class="fas fa-atlas"></i><span>وثائقية</span></div>
+        <div class="nav-item" onclick="showTab('misc-tab', this); toggleSidebar()"><i class="fas fa-ellipsis-h"></i><span>متنوعات</span></div>
+        <div class="nav-item" onclick="showTab('bein-tab', this); toggleSidebar()"><i class="fas fa-futbol"></i><span>بي إن</span></div>
+        <div class="nav-item" onclick="showTab('osn-tab', this); toggleSidebar()"><i class="fas fa-film"></i><span>OSN</span></div>
+        <div class="nav-item" onclick="showTab('netflix-tab', this); toggleSidebar()"><i class="fab fa-netflix"></i><span>Netflix</span></div>
+        
+        <div class="sidebar-footer">
+            <div class="nav-item" onclick="toggleModal('settingsModal')"><i class="fas fa-cog"></i><span>الإعدادات</span></div>
+        </div>
+    </div>
+
+    <div class="modal" id="settingsModal">
+        <div class="modal-content">
+            <h3 style="margin-bottom: 20px; color: var(--text-blue);">إعدادات التطبيق</h3>
+            <div class="setting-row">
+                <span>وضع الأداء (ضعيف)</span>
+                <input type="checkbox" id="perfToggle" style="width:20px; height:20px;">
+            </div>
+            <p style="font-size: 11px; color: #888; margin-bottom: 20px;">قم بتفعيل هذا الوضع إذا كان جهازك قديمًا لتقليل الأنيميشن وتوفير الطاقة.</p>
+            <button class="btn-save" onclick="saveSettings()">حفظ وإغلاق</button>
+        </div>
+    </div>
 
     <div class="search-overlay" id="searchOverlay">
         <div class="search-header">
@@ -162,7 +230,6 @@
             <div class="section-header">متنوعات</div>
             <div class="movies-grid" id="miscGrid"></div>
         </div>
-        <!-- التبويبات الجديدة -->
         <div id="bein-tab" class="tab-content animate-tab">
             <div class="section-header">بي إن سبورت</div>
             <div class="movies-grid" id="beinGrid"></div>
@@ -177,23 +244,33 @@
         </div>
     </main>
 
-    <nav class="bottom-nav">
-        <div class="nav-item active" onclick="showTab('iraq-tab', this)"><i class="fas fa-flag"></i><span>العراق</span></div>
-        <div class="nav-item" onclick="showTab('mbc-tab', this)"><i class="fas fa-play"></i><span>MBC</span></div>
-        <div class="nav-item" onclick="showTab('sports-tab', this)"><i class="fas fa-running"></i><span>رياضة</span></div>
-        <div class="nav-item" onclick="showTab('doc-tab', this)"><i class="fas fa-atlas"></i><span>وثائقية</span></div>
-        <div class="nav-item" onclick="showTab('misc-tab', this)"><i class="fas fa-ellipsis-h"></i><span>متنوعات</span></div>
-        <div class="nav-item" onclick="showTab('bein-tab', this)"><i class="fas fa-futbol"></i><span>بي إن</span></div>
-        <div class="nav-item" onclick="showTab('osn-tab', this)"><i class="fas fa-film"></i><span>OSN</span></div>
-        <div class="nav-item" onclick="showTab('netflix-tab', this)"><i class="fab fa-netflix"></i><span>Netflix</span></div>
-    </nav>
-
     <script>
-        // ==================== متغير عام للبيانات ====================
         let data = {};
-
-        // ==================== دوال العرض الأساسية ====================
         let observer = null;
+
+        function toggleSidebar() {
+            const side = document.getElementById('sidebar');
+            const over = document.getElementById('sidebarOverlay');
+            side.classList.toggle('active');
+            over.style.display = side.classList.contains('active') ? 'block' : 'none';
+        }
+
+        function toggleModal(id) {
+            const modal = document.getElementById(id);
+            modal.style.display = (modal.style.display === 'flex') ? 'none' : 'flex';
+        }
+
+        function saveSettings() {
+            const lowPerf = document.getElementById('perfToggle').checked;
+            localStorage.setItem('lowPerf', lowPerf);
+            applyPerfMode(lowPerf);
+            toggleModal('settingsModal');
+        }
+
+        function applyPerfMode(isLow) {
+            if(isLow) document.body.classList.add('perf-low');
+            else document.body.classList.remove('perf-low');
+        }
 
         function initLazyLoading() {
             if (observer) observer.disconnect();
@@ -202,10 +279,10 @@
                     if (entry.isIntersecting) {
                         const img = entry.target;
                         const src = img.getAttribute('data-src');
-                        if (src) { 
+                        if (src) {
                             img.src = src; 
-                            img.removeAttribute('data-src'); 
-                            observer.unobserve(img); 
+                            img.removeAttribute('data-src');
+                            observer.unobserve(img);
                         }
                     }
                 });
@@ -237,7 +314,6 @@
             const target = document.getElementById(tabId);
             target.classList.add('active');
             if (el) el.classList.add('active');
-            // تمرير القائمة لأعلى (للهواتف)
             document.querySelector('.main-content').scrollTop = 0;
         }
 
@@ -253,17 +329,20 @@
             setTimeout(() => { toast.style.display = 'none'; }, 3000);
         }
 
-        // ==================== تحميل البيانات من database.json ====================
         window.onload = async () => {
+            // تحميل الإعدادات
+            const lowPerf = localStorage.getItem('lowPerf') === 'true';
+            document.getElementById('perfToggle').checked = lowPerf;
+            applyPerfMode(lowPerf);
+
             try {
                 const response = await fetch('database.json');
                 if (!response.ok) throw new Error('فشل تحميل البيانات');
                 data = await response.json();
             } catch (error) {
                 console.error(error);
-                data = {}; // بيانات فارغة في حال الفشل
+                data = {};
             } finally {
-                // تعبئة كل التبويبات
                 rebuildTab('iraqGrid', data.iraq || []);
                 rebuildTab('mbcGrid', data.mbc || []);
                 rebuildTab('sportsGrid', data.sports || []);
@@ -274,7 +353,6 @@
                 rebuildTab('netflixGrid', data.netflix || []);
             }
 
-            // ==================== البحث ====================
             document.getElementById('searchIcon').onclick = () => document.getElementById('searchOverlay').classList.add('active');
             document.getElementById('searchClose').onclick = () => document.getElementById('searchOverlay').classList.remove('active');
             document.getElementById('searchInput').oninput = (e) => {
@@ -306,7 +384,6 @@
             };
         };
 
-        // --- كود حماية إضافي (تعطيل الاختصارات) ---
         document.addEventListener('keydown', function(e) {
             if (e.ctrlKey && (e.key === 'c' || e.key === 'v' || e.key === 'u' || e.key === 's')) {
                 e.preventDefault();
